@@ -74,3 +74,39 @@ Vi är alltså ute efter resultat som specifik slutar på "@jensen.com". Men det
 Vi har även "\_"-tecknet som vi kan använda. Det betyder också ett wildcard men den kan bara matcha en karaktär. Vill ha flera wildcards-karaktärer fast ett bestämt antal så får vi använda flera "\_" efter varandra.
 
 ### READ med JOIN
+
+Är vi ute efter ett resultat som inkluderar data från en eller flera tabeller så måste vi använda en join för att koppla ihop dessa tabeller. Men vi kan inte koppla ihop tabeller hur som helst utan det måste först finnas en relation mellan tabellerna. Antingen en 1-M-relation eller en M-M-relation. Har vi en 1-M-relation så kan vi använda en simple JOIN men har vi en M-M-relation så behöver vi även en mellanliggande korstabell som vi måste inkludera i vår JOIN-query.
+
+#### JOIN i en 1-M Relation
+
+Låt oss utgå ifrån chinook-databsen och hämta hem alla customers med deras respektive invoices.
+
+```sql
+SELECT customers.CustomerId, FirstName, LastName, InvoiceId, Total
+FROM customers
+JOIN invoices ON customers.CustomerId = invoices.CustomerId
+```
+
+Här fick vi det förväntade resultatet, vi fick en lista på alla invoices som varje customer hade kopplat till sig. Vi kan till exmpel se att customer med CustomerId 2 _( Leonie Köhler )_ har 7 stycken invoices kopplat till sig på olika summor. Vill man få ut en lista på varje cusomters totala summa för alla dess invoices så skulle man kunna använda sig av "SUM" och "GROUP BY" för att få ut ett sånt resultat men det får ni experimentera med själv.
+
+#### JOIN i en M-M Relation
+
+Låt oss ta exempelet med "tracks" och "playlists", en track kan finnas på flera playlists, och en playlist kan innehålla flera tracks så där har vi en M-M-relation. Denna relation representeras utav en korstabell så för att få ut det här resultatet så måste vi inkludera korstabellen i våran JOIN.
+
+```sql
+SELECT playlists.PlayListId, playlists.Name, TrackId, tracks.Name
+FROM playlists
+JOIN playlist_track ON playlist_track.PlayListId = playlists.PlayListid
+JOIN tracks ON tracks.TrackId = playlist_track.TrackId
+```
+
+Så denna query funkar fint, vi får det vi är ute efter men vi kanske kan snygga till queryn lite. Det kan vi göra genom att ge temporära namn till våra tabeller och kolumner. Till exemepel "Name" kommer existera i två av tabellerna så i resultatet kommer de att namnges "Name" och "Name:1" och det säger inte så mycket. Låt oss använda nyckelordet "AS" för att fixa till detta.
+
+```sql
+SELECT p.PlayListId, p.Name AS playListName, TrackId, t.Name AS trackName
+FROM playlists AS p
+JOIN playlist_track AS pt ON pt.PlayListId = p.PlayListid
+JOIN tracks AS t ON t.TrackId = pt.TrackId
+```
+
+Så nu har vi givit temporära namn till det som vi tycker behöver det och det ser bättre ut. Om det här resultatet skulle skickas till en server som i sin tur skickar det vidare till en klient så kommer kolumnnamnet vara det som vi har döpt de till.
